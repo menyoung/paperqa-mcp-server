@@ -1,0 +1,14 @@
+[project]
+name = "paperqa-mcp-server"
+version = "0.1.0"
+description = "MCP server exposing PaperQA2 for deep synthesis across scientific papers"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = [
+    "paper-qa",
+    "mcp[cli]>=1.2.0",
+]
+
+[project.urls]
+Repository = "https://github.com/menyoung/paperqa-mcp-server"
