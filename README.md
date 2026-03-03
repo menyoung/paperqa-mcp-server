@@ -4,81 +4,140 @@ MCP server that exposes [PaperQA2](https://github.com/Future-House/paper-qa)
 as a tool for Claude. Point it at your Zotero storage (or any folder of PDFs)
 and Claude can do deep synthesis across your entire library.
 
-## Prerequisites
+## Quick start
 
-1. **uv** — install it if you don't have it:
+### 1. Install uv
 
-   ```bash
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   ```
-
-2. **OpenAI API key** — needed for embeddings. Get one at
-   https://platform.openai.com/api-keys
-
-3. **Papers** — a folder of PDFs. If you use Zotero, your PDFs are at
-   `~/Zotero/storage` by default.
-
-## Test it from the terminal
-
-Before connecting to Claude, verify it works:
+[uv](https://docs.astral.sh/uv/) is a Python package manager. If you don't
+have it yet:
 
 ```bash
-OPENAI_API_KEY=sk-your-key-here uv run server.py
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-You should see the server start with no errors. Press Ctrl+C to stop it.
+After installing, **restart your terminal** so `uv` is on your PATH.
 
-If your PDFs are somewhere other than `~/Zotero/storage`:
+Verify it works:
 
 ```bash
-OPENAI_API_KEY=sk-your-key-here PAPER_DIRECTORY=/path/to/your/pdfs uv run server.py
+uv --version
 ```
 
-## Connect to Claude Desktop
+### 2. Get an OpenAI API key
+
+PaperQA2 uses OpenAI for embeddings and internal reasoning. Get a key at
+https://platform.openai.com/api-keys
+
+### 3. Clone this repo
+
+```bash
+git clone https://github.com/YOUR-ORG/paperqa-mcp-server.git
+cd paperqa-mcp-server
+```
+
+### 4. Test that it runs
+
+This downloads ~90 Python packages the first time — that's normal:
+
+```bash
+uv run server.py &
+```
+
+Wait a few seconds. If you see `Installed XX packages` and no errors, it
+worked. Kill the background process:
+
+```bash
+kill %1 2>/dev/null
+```
+
+### 5. Find your full paths
+
+You'll need two absolute paths for the config. Run these and copy the output:
+
+```bash
+which uv           # e.g. /Users/yourname/.local/bin/uv
+pwd                 # e.g. /Users/yourname/paperqa-mcp-server
+```
+
+### 6. Add to Claude Desktop
 
 1. Open Claude Desktop
-2. Go to Settings → Developer → Edit Config
-3. This opens `claude_desktop_config.json`. Add the `paperqa` entry:
+2. Go to **Settings → Developer → Edit Config**
+3. This opens `claude_desktop_config.json`. Add a `paperqa` entry inside
+   `mcpServers` (create `mcpServers` if it doesn't exist):
 
 ```json
 {
   "mcpServers": {
     "paperqa": {
-      "command": "uv",
-      "args": ["run", "/absolute/path/to/paperqa-mcp-server/server.py"],
+      "command": "/FULL/PATH/TO/uv",
+      "args": ["run", "/FULL/PATH/TO/paperqa-mcp-server/server.py"],
       "env": {
-        "OPENAI_API_KEY": "sk-your-key-here",
-        "PAPER_DIRECTORY": "/Users/yourname/Zotero/storage"
+        "OPENAI_API_KEY": "sk-your-key-here"
       }
     }
   }
 }
 ```
 
-**Important:**
-- Replace `/absolute/path/to/` with the actual path where you cloned this repo
-- Replace `sk-your-key-here` with your real OpenAI API key
-- Replace `/Users/yourname/` with your actual home directory
-- `PAPER_DIRECTORY` can be omitted if your PDFs are at `~/Zotero/storage`
+Replace the three ALL-CAPS placeholders:
+- `/FULL/PATH/TO/uv` — paste the output of `which uv` from step 5
+- `/FULL/PATH/TO/paperqa-mcp-server/server.py` — paste the output of `pwd`
+  from step 5, then add `/server.py` at the end
+- `sk-your-key-here` — your OpenAI API key from step 2
 
-4. Quit Claude Desktop completely and reopen it
-5. You should see a hammer icon with `paper_qa` listed as a tool
+If your PDFs are somewhere other than `~/Zotero/storage`, add a
+`PAPER_DIRECTORY` entry to `env`:
 
-## First run is slow
+```json
+"env": {
+  "OPENAI_API_KEY": "sk-your-key-here",
+  "PAPER_DIRECTORY": "/full/path/to/your/pdfs"
+}
+```
 
-The first time you ask a question, PaperQA2 indexes every PDF in your
+4. **Quit Claude Desktop completely** (Cmd+Q, not just close the window)
+   and reopen it
+5. You should see a hammer icon — click it and `paper_qa` should be listed
+
+### 7. Pre-build the index (optional but recommended)
+
+The first time you use `paper_qa`, PaperQA2 indexes every PDF in your
 paper directory — chunking, embedding, and fetching metadata. With
-hundreds of papers this takes minutes and costs a few dollars in
-OpenAI embedding API calls.
+hundreds of papers this takes minutes and costs a few dollars in OpenAI
+embedding API calls.
 
-After that, the index is cached. Only new or changed files get
-re-processed on subsequent runs.
-
-To pre-build the index without waiting for your first query:
+You can do this ahead of time so your first query isn't painfully slow:
 
 ```bash
-OPENAI_API_KEY=sk-your-key-here uv run --with paper-qa pqa index --paper_directory ~/Zotero/storage
+OPENAI_API_KEY=sk-your-key-here uv run --with paper-qa --with pillow \
+  pqa --parsing.multimodal OFF index ~/Zotero/storage
 ```
+
+(Replace `~/Zotero/storage` with your PDF folder if different.)
+
+After that, the index is cached at `~/.pqa/indexes/`. Only new or changed
+files get re-processed on subsequent runs.
+
+## Troubleshooting
+
+**"Server disconnected" in Claude Desktop**
+
+Claude Desktop has a short startup timeout. If `uv` needs to download
+packages on first launch, it will time out. Fix: run `uv run server.py`
+once from the terminal first (step 4 above) so packages are cached.
+
+**"No such file or directory"**
+
+You must use the **full absolute path** to `uv` in the config (e.g.
+`/Users/yourname/.local/bin/uv`, not just `uv`). Claude Desktop runs
+with a minimal system PATH.
+
+**Hammer icon doesn't appear**
+
+Make sure you quit Claude Desktop completely (Cmd+Q) and reopened it.
+Check for JSON syntax errors in `claude_desktop_config.json` — a
+missing comma is the most common mistake.
 
 ## Use a different LLM
 
@@ -89,25 +148,10 @@ its own LLM calls internally to gather and synthesize evidence.
 To use a different model, add env vars to your Claude Desktop config:
 
 ```json
-{
-  "env": {
-    "OPENAI_API_KEY": "sk-your-key-here",
-    "PQA_LLM": "gpt-4o",
-    "PQA_SUMMARY_LLM": "gpt-4o-mini"
-  }
-}
-```
-
-To use Claude as PaperQA2's internal LLM (you'll pay for both
-Claude Desktop and Claude API calls):
-
-```json
-{
-  "env": {
-    "ANTHROPIC_API_KEY": "sk-ant-your-key-here",
-    "PQA_LLM": "claude-sonnet-4-20250514",
-    "PQA_SUMMARY_LLM": "claude-haiku-4-5-20251001"
-  }
+"env": {
+  "OPENAI_API_KEY": "sk-your-key-here",
+  "PQA_LLM": "gpt-4o",
+  "PQA_SUMMARY_LLM": "gpt-4o-mini"
 }
 ```
 
