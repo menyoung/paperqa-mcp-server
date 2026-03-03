@@ -31,7 +31,8 @@ def _settings() -> Settings:
                 "paper_directory": os.environ.get(
                     "PAPER_DIRECTORY",
                     os.path.expanduser("~/Zotero/storage"),
-                )
+                ),
+                "concurrency": 1,
             }
         },
     )
