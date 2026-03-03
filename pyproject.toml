@@ -8,6 +8,7 @@ requires-python = ">=3.11"
 dependencies = [
     "paper-qa",
     "mcp[cli]>=1.2.0",
+    "pillow",
 ]
 
 [project.urls]

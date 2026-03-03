@@ -40,15 +40,10 @@ cd paperqa-mcp-server
 This downloads ~90 Python packages the first time — that's normal:
 
 ```bash
-uv run server.py &
+uv run python -c "import paperqa; import mcp; print('OK')"
 ```
 
-Wait a few seconds. If you see `Installed XX packages` and no errors, it
-worked. Kill the background process:
-
-```bash
-kill %1 2>/dev/null
-```
+If you see `Installed XX packages` followed by `OK`, it worked.
 
 ### 5. Find your full paths
 
@@ -140,8 +135,8 @@ files get re-processed on subsequent runs.
 **"Server disconnected" in Claude Desktop**
 
 Claude Desktop has a short startup timeout. If `uv` needs to download
-packages on first launch, it will time out. Fix: run `uv run server.py`
-once from the terminal first (step 4 above) so packages are cached.
+packages on first launch, it will time out. Fix: run the command in
+step 4 once from the terminal first so packages are cached.
 
 **"No such file or directory"**
 
@@ -149,11 +144,19 @@ You must use the **full absolute path** to `uv` in the config (e.g.
 `/Users/yourname/.local/bin/uv`, not just `uv`). Claude Desktop runs
 with a minimal system PATH.
 
+**"No result received" or query times out**
+
+Claude Desktop has a ~60-second timeout for tool calls. If the paper
+index isn't fully built, PaperQA2 spends that time indexing remaining
+files instead of answering your question, and the request times out
+silently. Fix: finish building the index from the terminal first (step 7).
+
 **"unhandled errors in a TaskGroup" when querying**
 
-This means the index isn't fully built yet. PaperQA2 tries to index
-remaining files during your query, hits the OpenAI rate limit, and
-crashes. Fix: finish building the index from the terminal first (step 7).
+Same root cause as above — the index isn't fully built. PaperQA2 tries
+to index remaining files during your query, hits the OpenAI rate limit,
+and crashes. Fix: finish building the index from the terminal first
+(step 7).
 
 **Hammer icon doesn't appear**
 

@@ -50,8 +50,18 @@ async def paper_qa(query: str) -> str:
 
     Not for quick metadata lookups or library browsing — use Zotero
     tools for that.
+
+    This tool can take 30–90 seconds to respond. If it times out or
+    returns an error, the paper index is likely still building. Ask the
+    user to finish building the index from the terminal (see the
+    paperqa-mcp-server README, step 7).
     """
-    response = await agent_query(query=query, settings=_settings())
+    try:
+        response = await agent_query(query=query, settings=_settings())
+    except Exception as e:
+        return f"PaperQA error: {e}"
+    if not response.session.formatted_answer:
+        return f"PaperQA could not answer (status: {response.status})."
     return response.session.formatted_answer
 
 
