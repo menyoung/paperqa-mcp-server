@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.11"
 # dependencies = [
-#     "paper-qa",
+#     "paper-qa>=2026.2,<2026.3",
 #     "mcp[cli]>=1.2.0",
 #     "pillow",
 # ]
@@ -131,18 +131,26 @@ async def paper_qa(query: str) -> str:
     """Search and synthesize across all papers in the library.
 
     Use this for questions that require deep reading and synthesis
-    across multiple scientific papers. Returns a detailed answer with
-    inline citations. Citation source paths contain 8-character Zotero
-    storage keys (e.g. ABC123DE) that can be used to look up items
-    in Zotero.
+    across multiple scientific papers — e.g. "What methods have been
+    used to recycle lithium from spent batteries?" or "Compare the
+    thermal stability of PEEK vs PTFE in the literature."
+
+    Returns a detailed answer with inline citations. Each citation
+    includes a file path containing an 8-character Zotero storage key
+    (e.g. ABC123DE from storage/ABC123DE/paper.pdf). You can use these
+    keys with zotero-mcp tools to look up the full bibliographic record,
+    read annotations, or find related items.
 
     Not for quick metadata lookups or library browsing — use Zotero
     tools for that.
 
-    This tool can take 30–90 seconds to respond. If it times out or
-    returns an error, the paper index is likely still building. Ask the
-    user to finish building the index from the terminal (see the
-    paperqa-mcp-server README, step 7).
+    If this tool returns "Index incomplete", the paper index has not
+    been fully built yet. Tell the user to run the index build command
+    from the terminal (see the paperqa-mcp-server README, step 7).
+    Do not retry the query — it will give the same result until the
+    index is built.
+
+    This tool can take 30–90 seconds to respond when working normally.
     """
     settings = _settings()
     status = _index_status(settings)

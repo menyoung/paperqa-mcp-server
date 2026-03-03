@@ -6,7 +6,7 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
-    "paper-qa",
+    "paper-qa>=2026.2,<2026.3",
     "mcp[cli]>=1.2.0",
     "pillow",
 ]
