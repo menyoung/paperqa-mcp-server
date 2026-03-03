@@ -1,8 +1,10 @@
 # paperqa-mcp-server
 
-MCP server that exposes [PaperQA2](https://github.com/Future-House/paper-qa)
-as a tool for Claude. Point it at your Zotero storage (or any folder of PDFs)
-and Claude can do deep synthesis across your entire library.
+Give Claude the ability to read, search, and synthesize across your
+entire PDF library. Built on [PaperQA2](https://github.com/Future-House/paper-qa).
+
+Point it at your Zotero storage folder (or any folder of PDFs) and ask
+Claude questions that require deep reading across multiple papers.
 
 ## Quick start
 
@@ -28,7 +30,7 @@ uv --version
 PaperQA2 uses OpenAI for embeddings and internal reasoning. Get a key at
 https://platform.openai.com/api-keys
 
-### 3. Clone this repo
+### 3. Download this project
 
 ```bash
 git clone https://github.com/menyoung/paperqa-mcp-server.git
@@ -97,33 +99,19 @@ If your PDFs are somewhere other than `~/Zotero/storage`, add a
 
 ### 7. Pre-build the index
 
-You **must** pre-build the index before using `paper_qa`. Without it,
-your first query will try to index every PDF on the fly, which takes
-too long and will time out.
+Before Claude can search your papers, the server needs to build a search
+index. This reads each PDF, splits it into chunks, and sends the chunks
+to OpenAI's embedding API. With hundreds of papers this takes a while
+and costs a few dollars in API calls.
 
-PaperQA2 chunks each PDF and embeds the text via the OpenAI embeddings
-API. With hundreds of papers this takes a while and costs a few dollars
-in API calls.
+If you have more than 10 unindexed papers, the server will refuse to
+answer queries and tell you to run this step first. A few new papers
+will be indexed automatically when you query.
 
 ```bash
 cd /path/to/paperqa-mcp-server
 OPENAI_API_KEY=sk-your-key-here uv run server.py index
 ```
-
-This uses the same settings as the MCP server, so the index it builds is
-exactly the one the server will look for. Those settings include:
-
-- **Multimodal OFF** — skip image extraction from PDFs (avoids a crash on
-  PDFs with CMYK images)
-- **Doc details OFF** — skip Crossref/Semantic Scholar metadata lookups
-  (avoids rate limits; Claude can get metadata from Zotero directly via
-  zotero-mcp)
-- **Concurrency 1** — index one file at a time to stay under OpenAI's
-  embedding rate limit
-
-> **Why not `pqa index`?** The `pqa` CLI constructs settings differently than
-> `server.py` (different chunk size defaults, path handling). This produces a
-> different index hash, so the server wouldn't find the index you built.
 
 **If this crashes** with a rate limit error, just re-run the same command.
 It picks up where it left off — each run indexes more files. With a large
@@ -146,19 +134,12 @@ You must use the **full absolute path** to `uv` in the config (e.g.
 `/Users/yourname/.local/bin/uv`, not just `uv`). Claude Desktop runs
 with a minimal system PATH.
 
-**"No result received" or query times out**
+**"Index incomplete" when querying**
 
-Claude Desktop has a ~60-second timeout for tool calls. If the paper
-index isn't fully built, PaperQA2 spends that time indexing remaining
-files instead of answering your question, and the request times out
-silently. Fix: finish building the index from the terminal first (step 7).
-
-**"unhandled errors in a TaskGroup" when querying**
-
-Same root cause as above — the index isn't fully built. PaperQA2 tries
-to index remaining files during your query, hits the OpenAI rate limit,
-and crashes. Fix: finish building the index from the terminal first
-(step 7).
+The server checks the index before each query. If too many papers are
+unindexed, it returns a diagnostic message instead of trying (and
+failing) to index them all on the fly. Fix: run the index command in
+step 7.
 
 **Hammer icon doesn't appear**
 
@@ -195,11 +176,35 @@ To use a different model, add env vars to your Claude Desktop config:
 
 ## Works with zotero-mcp
 
-This pairs well with [zotero-mcp](https://github.com/kucinghyper/zotero-mcp):
+This pairs well with [zotero-mcp](https://github.com/54yyyu/zotero-mcp):
 
-- **paperqa-mcp-server** → deep reading and synthesis across full paper text
-- **zotero-mcp** → browse library, search metadata, read annotations, manage collections
+- **paperqa-mcp-server** — deep reading and synthesis across full paper text
+- **zotero-mcp** — browse your library, search metadata, read annotations
 
-File paths in PaperQA2's citations contain Zotero's 8-character storage keys
-(e.g. `ABC123DE` from `storage/ABC123DE/paper.pdf`). Claude can use these
-keys with zotero-mcp to look up the full item in your library.
+Claude can cross-reference between them — for example, finding papers
+with PaperQA and then pulling up their Zotero metadata and annotations.
+PaperQA2's citations include Zotero storage keys (e.g. `ABC123DE` from
+`storage/ABC123DE/paper.pdf`) that Claude can use to look up items via
+zotero-mcp.
+
+## Index implementation notes
+
+`uv run server.py index` uses the same `_settings()` function as the MCP
+server, so the index it builds is exactly the one the server will look
+for. The PaperQA2 index directory name is a hash of the settings
+(embedding model, chunk size, paper directory path, etc.). The settings
+include:
+
+- **Multimodal OFF** — skip image extraction from PDFs (avoids a crash on
+  PDFs with CMYK images)
+- **Doc details OFF** — skip Crossref/Semantic Scholar metadata lookups
+  (avoids rate limits; Claude can get metadata from Zotero directly via
+  zotero-mcp)
+- **Concurrency 1** — index one file at a time to stay under OpenAI's
+  embedding rate limit
+
+> **Why not `pqa index`?** The `pqa` CLI constructs settings via pydantic's
+> `CliSettingsSource`, which produces different defaults than constructing
+> `Settings()` directly in Python (e.g. `chunk_chars` of 7000 vs 5000).
+> Different settings = different index hash = server can't find the index.
+> Always use `uv run server.py index` to build the index.
