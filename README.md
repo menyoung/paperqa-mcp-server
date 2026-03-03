@@ -31,7 +31,7 @@ https://platform.openai.com/api-keys
 ### 3. Clone this repo
 
 ```bash
-git clone https://github.com/YOUR-ORG/paperqa-mcp-server.git
+git clone https://github.com/menyoung/paperqa-mcp-server.git
 cd paperqa-mcp-server
 ```
 
@@ -100,21 +100,37 @@ If your PDFs are somewhere other than `~/Zotero/storage`, add a
    and reopen it
 5. You should see a hammer icon — click it and `paper_qa` should be listed
 
-### 7. Pre-build the index (optional but recommended)
+### 7. Pre-build the index
 
-The first time you use `paper_qa`, PaperQA2 indexes every PDF in your
-paper directory — chunking, embedding, and fetching metadata. With
-hundreds of papers this takes minutes and costs a few dollars in OpenAI
-embedding API calls.
+You **must** pre-build the index before using `paper_qa`. Without it,
+your first query will try to index every PDF on the fly, which takes
+too long and will time out.
 
-You can do this ahead of time so your first query isn't painfully slow:
+PaperQA2 chunks each PDF and embeds the text via the OpenAI embeddings
+API. With hundreds of papers this takes a while and costs a few dollars
+in API calls.
 
 ```bash
+cd /path/to/paperqa-mcp-server
 OPENAI_API_KEY=sk-your-key-here uv run --with paper-qa --with pillow \
-  pqa --parsing.multimodal OFF index ~/Zotero/storage
+  pqa --parsing.multimodal OFF --parsing.use_doc_details false \
+  --agent.index.concurrency 1 index ~/Zotero/storage
 ```
 
-(Replace `~/Zotero/storage` with your PDF folder if different.)
+Replace `~/Zotero/storage` with your PDF folder if different.
+
+What the flags do:
+- `--parsing.multimodal OFF` — skip image extraction from PDFs (avoids
+  a crash on PDFs with CMYK images)
+- `--parsing.use_doc_details false` — skip Crossref/Semantic Scholar
+  metadata lookups (avoids rate limits; Claude can get metadata from
+  Zotero directly via zotero-mcp)
+- `--agent.index.concurrency 1` — index one file at a time to stay
+  under OpenAI's embedding rate limit
+
+**If this crashes** with a rate limit error, just re-run the same command.
+It picks up where it left off — each run indexes more files. With a large
+library (500+ papers) you may need to run it a few times.
 
 After that, the index is cached at `~/.pqa/indexes/`. Only new or changed
 files get re-processed on subsequent runs.
@@ -132,6 +148,12 @@ once from the terminal first (step 4 above) so packages are cached.
 You must use the **full absolute path** to `uv` in the config (e.g.
 `/Users/yourname/.local/bin/uv`, not just `uv`). Claude Desktop runs
 with a minimal system PATH.
+
+**"unhandled errors in a TaskGroup" when querying**
+
+This means the index isn't fully built yet. PaperQA2 tries to index
+remaining files during your query, hits the OpenAI rate limit, and
+crashes. Fix: finish building the index from the terminal first (step 7).
 
 **Hammer icon doesn't appear**
 

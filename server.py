@@ -24,7 +24,7 @@ def _settings() -> Settings:
         summary_llm=os.environ.get("PQA_SUMMARY_LLM", "gpt-4o-mini"),
         embedding=os.environ.get("PQA_EMBEDDING", "text-embedding-3-small"),
         temperature=0.1,
-        parsing={"multimodal": "OFF"},
+        parsing={"multimodal": "OFF", "use_doc_details": False},
         answer={"evidence_k": 15, "answer_max_sources": 10},
         agent={
             "index": {
