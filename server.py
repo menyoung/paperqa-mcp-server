@@ -158,5 +158,23 @@ async def paper_qa(query: str) -> str:
     return response.session.formatted_answer
 
 
+def _build_index() -> None:
+    """Build the search index using the same settings as the MCP server."""
+    import asyncio
+
+    from paperqa.agents.search import get_directory_index
+
+    settings = _settings()
+    print(f"Building index: {settings.get_index_name()}")
+    print(f"Paper directory: {settings.agent.index.paper_directory}")
+    asyncio.run(get_directory_index(settings=settings))
+    print("Done.")
+
+
 if __name__ == "__main__":
-    mcp.run(transport="stdio")
+    import sys
+
+    if len(sys.argv) > 1 and sys.argv[1] == "index":
+        _build_index()
+    else:
+        mcp.run(transport="stdio")

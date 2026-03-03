@@ -107,21 +107,23 @@ in API calls.
 
 ```bash
 cd /path/to/paperqa-mcp-server
-OPENAI_API_KEY=sk-your-key-here uv run --with paper-qa --with pillow \
-  pqa --parsing.multimodal OFF --parsing.use_doc_details false \
-  --agent.index.concurrency 1 index ~/Zotero/storage
+OPENAI_API_KEY=sk-your-key-here uv run server.py index
 ```
 
-Replace `~/Zotero/storage` with your PDF folder if different.
+This uses the same settings as the MCP server, so the index it builds is
+exactly the one the server will look for. Those settings include:
 
-What the flags do:
-- `--parsing.multimodal OFF` — skip image extraction from PDFs (avoids
-  a crash on PDFs with CMYK images)
-- `--parsing.use_doc_details false` — skip Crossref/Semantic Scholar
-  metadata lookups (avoids rate limits; Claude can get metadata from
-  Zotero directly via zotero-mcp)
-- `--agent.index.concurrency 1` — index one file at a time to stay
-  under OpenAI's embedding rate limit
+- **Multimodal OFF** — skip image extraction from PDFs (avoids a crash on
+  PDFs with CMYK images)
+- **Doc details OFF** — skip Crossref/Semantic Scholar metadata lookups
+  (avoids rate limits; Claude can get metadata from Zotero directly via
+  zotero-mcp)
+- **Concurrency 1** — index one file at a time to stay under OpenAI's
+  embedding rate limit
+
+> **Why not `pqa index`?** The `pqa` CLI constructs settings differently than
+> `server.py` (different chunk size defaults, path handling). This produces a
+> different index hash, so the server wouldn't find the index you built.
 
 **If this crashes** with a rate limit error, just re-run the same command.
 It picks up where it left off — each run indexes more files. With a large
