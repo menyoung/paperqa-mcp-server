@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "paperqa-mcp-server"
 version = "0.1.0"
@@ -5,11 +9,25 @@ description = "MCP server exposing PaperQA2 for deep synthesis across scientific
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
+keywords = ["mcp", "paperqa", "scientific-literature", "research", "llm", "rag"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+]
 dependencies = [
     "paper-qa>=2026.2,<2026.3",
     "mcp[cli]>=1.2.0",
     "pillow",
 ]
 
+[project.scripts]
+paperqa-mcp-server = "paperqa_mcp_server:main"
+
 [project.urls]
 Repository = "https://github.com/menyoung/paperqa-mcp-server"
+Issues = "https://github.com/menyoung/paperqa-mcp-server/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/paperqa_mcp_server"]

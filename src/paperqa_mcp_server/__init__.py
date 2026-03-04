@@ -1,11 +1,3 @@
-# /// script
-# requires-python = ">=3.11"
-# dependencies = [
-#     "paper-qa>=2026.2,<2026.3",
-#     "mcp[cli]>=1.2.0",
-#     "pillow",
-# ]
-# ///
 """MCP server exposing PaperQA2 for deep synthesis across scientific papers."""
 
 from __future__ import annotations
@@ -80,7 +72,7 @@ def _index_status(settings: Settings | None = None) -> dict:
         message = (
             f"Index manifest is corrupt ({total} files on disk)."
             " Rebuild the index from the terminal"
-            " — see the paperqa-mcp-server README, step 7."
+            " — see the paperqa-mcp-server README, step 5."
         )
     else:
         message = f"{indexed}/{total} papers indexed"
@@ -94,7 +86,7 @@ def _index_status(settings: Settings | None = None) -> dict:
             message += (
                 ". Queries will fail or time out."
                 " Please finish building the index from the terminal"
-                " — see the paperqa-mcp-server README, step 7."
+                " — see the paperqa-mcp-server README, step 5."
             )
 
     return {
@@ -146,7 +138,7 @@ async def paper_qa(query: str) -> str:
 
     If this tool returns "Index incomplete", the paper index has not
     been fully built yet. Tell the user to run the index build command
-    from the terminal (see the paperqa-mcp-server README, step 7).
+    from the terminal (see the paperqa-mcp-server README, step 5).
     Do not retry the query — it will give the same result until the
     index is built.
 
@@ -179,7 +171,7 @@ def _build_index() -> None:
     print("Done.")
 
 
-if __name__ == "__main__":
+def main():
     import sys
 
     if len(sys.argv) > 1 and sys.argv[1] == "index":

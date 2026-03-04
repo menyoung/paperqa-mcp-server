@@ -30,45 +30,35 @@ uv --version
 PaperQA2 uses OpenAI for embeddings and internal reasoning. Get a key at
 https://platform.openai.com/api-keys
 
-### 3. Download this project
-
-```bash
-git clone https://github.com/menyoung/paperqa-mcp-server.git
-cd paperqa-mcp-server
-```
-
-### 4. Test that it runs
+### 3. Test that it runs
 
 This downloads ~90 Python packages the first time — that's normal:
 
 ```bash
-uv run python -c "import paperqa; import mcp; print('OK')"
+uvx paperqa-mcp-server --help 2>/dev/null; echo "OK if no Python errors above"
 ```
 
-If you see `Installed XX packages` followed by `OK`, it worked.
-
-### 5. Find your full paths
-
-You'll need two absolute paths for the config. Run these and copy the output:
-
-```bash
-which uv           # e.g. /Users/yourname/.local/bin/uv
-pwd                 # e.g. /Users/yourname/paperqa-mcp-server
-```
-
-### 6. Add to Claude Desktop
+### 4. Add to Claude Desktop
 
 1. Open Claude Desktop
 2. Go to **Settings → Developer → Edit Config**
 3. This opens `claude_desktop_config.json`. Add a `paperqa` entry inside
    `mcpServers` (create `mcpServers` if it doesn't exist):
 
+First, find your full path to `uvx`:
+
+```bash
+which uvx           # e.g. /Users/yourname/.local/bin/uvx
+```
+
+Then use that path in the config:
+
 ```json
 {
   "mcpServers": {
     "paperqa": {
-      "command": "/FULL/PATH/TO/uv",
-      "args": ["run", "/FULL/PATH/TO/paperqa-mcp-server/server.py"],
+      "command": "/FULL/PATH/TO/uvx",
+      "args": ["paperqa-mcp-server"],
       "env": {
         "OPENAI_API_KEY": "sk-your-key-here"
       }
@@ -77,10 +67,8 @@ pwd                 # e.g. /Users/yourname/paperqa-mcp-server
 }
 ```
 
-Replace the three ALL-CAPS placeholders:
-- `/FULL/PATH/TO/uv` — paste the output of `which uv` from step 5
-- `/FULL/PATH/TO/paperqa-mcp-server/server.py` — paste the output of `pwd`
-  from step 5, then add `/server.py` at the end
+Replace the two placeholders:
+- `/FULL/PATH/TO/uvx` — paste the output of `which uvx`
 - `sk-your-key-here` — your OpenAI API key from step 2
 
 If your PDFs are somewhere other than `~/Zotero/storage`, add a
@@ -97,7 +85,7 @@ If your PDFs are somewhere other than `~/Zotero/storage`, add a
    and reopen it
 5. You should see a hammer icon — click it and `paper_qa` should be listed
 
-### 7. Pre-build the index
+### 5. Pre-build the index
 
 Before Claude can search your papers, the server needs to build a search
 index. This reads each PDF, splits it into chunks, and sends the chunks
@@ -109,8 +97,7 @@ answer queries and tell you to run this step first. A few new papers
 will be indexed automatically when you query.
 
 ```bash
-cd /path/to/paperqa-mcp-server
-OPENAI_API_KEY=sk-your-key-here uv run server.py index
+OPENAI_API_KEY=sk-your-key-here uvx paperqa-mcp-server index
 ```
 
 **If this crashes** with a rate limit error, just re-run the same command.
@@ -125,21 +112,15 @@ files get re-processed on subsequent runs.
 **"Server disconnected" in Claude Desktop**
 
 Claude Desktop has a short startup timeout. If `uv` needs to download
-packages on first launch, it will time out. Fix: run the command in
-step 4 once from the terminal first so packages are cached.
-
-**"No such file or directory"**
-
-You must use the **full absolute path** to `uv` in the config (e.g.
-`/Users/yourname/.local/bin/uv`, not just `uv`). Claude Desktop runs
-with a minimal system PATH.
+packages on first launch, it will time out. Fix: run `uvx paperqa-mcp-server`
+once from the terminal first so packages are cached.
 
 **"Index incomplete" when querying**
 
 The server checks the index before each query. If too many papers are
 unindexed, it returns a diagnostic message instead of trying (and
 failing) to index them all on the fly. Fix: run the index command in
-step 7.
+step 5.
 
 **Hammer icon doesn't appear**
 
@@ -189,7 +170,7 @@ zotero-mcp.
 
 ## Index implementation notes
 
-`uv run server.py index` uses the same `_settings()` function as the MCP
+`paperqa-mcp-server index` uses the same `_settings()` function as the MCP
 server, so the index it builds is exactly the one the server will look
 for. The PaperQA2 index directory name is a hash of the settings
 (embedding model, chunk size, paper directory path, etc.). The settings
@@ -207,4 +188,40 @@ include:
 > `CliSettingsSource`, which produces different defaults than constructing
 > `Settings()` directly in Python (e.g. `chunk_chars` of 7000 vs 5000).
 > Different settings = different index hash = server can't find the index.
-> Always use `uv run server.py index` to build the index.
+> Always use `paperqa-mcp-server index` to build the index.
+
+## Install from GitHub (latest)
+
+To use the latest version from the main branch instead of PyPI:
+
+```json
+{
+  "mcpServers": {
+    "paperqa": {
+      "command": "/FULL/PATH/TO/uvx",
+      "args": ["--from", "git+https://github.com/menyoung/paperqa-mcp-server", "paperqa-mcp-server"],
+      "env": {
+        "OPENAI_API_KEY": "sk-your-key-here"
+      }
+    }
+  }
+}
+```
+
+To build the index from the latest main branch:
+
+```bash
+OPENAI_API_KEY=sk-your-key-here uvx --from git+https://github.com/menyoung/paperqa-mcp-server paperqa-mcp-server index
+```
+
+## Development
+
+If you want to contribute or modify the server locally:
+
+```bash
+git clone https://github.com/menyoung/paperqa-mcp-server.git
+cd paperqa-mcp-server
+uv sync
+uv run paperqa-mcp-server        # run the server
+uv run paperqa-mcp-server index  # build the index
+```
