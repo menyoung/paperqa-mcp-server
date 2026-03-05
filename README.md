@@ -30,34 +30,44 @@ uv --version
 PaperQA2 uses OpenAI for embeddings and internal reasoning. Get a key at
 https://platform.openai.com/api-keys
 
-### 3. Test that it runs
+### 3. Warm the package cache
 
-This downloads ~90 Python packages the first time — that's normal:
+The first run downloads ~90 Python packages — this is normal and only
+happens once. Run this so the packages are cached before Claude Desktop
+tries to start the server:
 
 ```bash
-uvx paperqa-mcp-server --help 2>/dev/null; echo "OK if no Python errors above"
+uvx paperqa-mcp-server index 2>&1 | head -1
 ```
 
-### 4. Add to Claude Desktop
+You should see output like `Building index: ...`. Press Ctrl+C to stop
+(we'll run the real index build in step 6). If you see a Python error
+instead, something went wrong with the install.
+
+### 4. Find your full path to uvx
+
+Claude Desktop can't find `uvx` on its own — you need to give it the
+full path. Run:
+
+```bash
+which uvx
+```
+
+This prints something like `/Users/yourname/.local/bin/uvx`. Copy it —
+you'll need it in the next step.
+
+### 5. Add to Claude Desktop
 
 1. Open Claude Desktop
 2. Go to **Settings → Developer → Edit Config**
 3. This opens `claude_desktop_config.json`. Add a `paperqa` entry inside
    `mcpServers` (create `mcpServers` if it doesn't exist):
 
-First, find your full path to `uvx`:
-
-```bash
-which uvx           # e.g. /Users/yourname/.local/bin/uvx
-```
-
-Then use that path in the config:
-
 ```json
 {
   "mcpServers": {
     "paperqa": {
-      "command": "/FULL/PATH/TO/uvx",
+      "command": "/Users/yourname/.local/bin/uvx",
       "args": ["paperqa-mcp-server"],
       "env": {
         "OPENAI_API_KEY": "sk-your-key-here"
@@ -68,7 +78,7 @@ Then use that path in the config:
 ```
 
 Replace the two placeholders:
-- `/FULL/PATH/TO/uvx` — paste the output of `which uvx`
+- `/Users/yourname/.local/bin/uvx` — paste the output of `which uvx` from step 4
 - `sk-your-key-here` — your OpenAI API key from step 2
 
 If your PDFs are somewhere other than `~/Zotero/storage`, add a
@@ -85,7 +95,7 @@ If your PDFs are somewhere other than `~/Zotero/storage`, add a
    and reopen it
 5. You should see a hammer icon — click it and `paper_qa` should be listed
 
-### 5. Pre-build the index
+### 6. Pre-build the index
 
 Before Claude can search your papers, the server needs to build a search
 index. This reads each PDF, splits it into chunks, and sends the chunks
@@ -97,8 +107,12 @@ answer queries and tell you to run this step first. A few new papers
 will be indexed automatically when you query.
 
 ```bash
-OPENAI_API_KEY=sk-your-key-here uvx paperqa-mcp-server index
+export OPENAI_API_KEY=sk-your-key-here
+uvx paperqa-mcp-server index
 ```
+
+You'll see log lines as each paper is processed. When it finishes, it
+prints `Done.`
 
 **If this crashes** with a rate limit error, just re-run the same command.
 It picks up where it left off — each run indexes more files. With a large
@@ -120,7 +134,7 @@ once from the terminal first so packages are cached.
 The server checks the index before each query. If too many papers are
 unindexed, it returns a diagnostic message instead of trying (and
 failing) to index them all on the fly. Fix: run the index command in
-step 5.
+step 6.
 
 **Hammer icon doesn't appear**
 
@@ -198,7 +212,7 @@ To use the latest version from the main branch instead of PyPI:
 {
   "mcpServers": {
     "paperqa": {
-      "command": "/FULL/PATH/TO/uvx",
+      "command": "/Users/yourname/.local/bin/uvx",
       "args": ["--from", "git+https://github.com/menyoung/paperqa-mcp-server", "paperqa-mcp-server"],
       "env": {
         "OPENAI_API_KEY": "sk-your-key-here"

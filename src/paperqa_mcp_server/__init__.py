@@ -72,7 +72,7 @@ def _index_status(settings: Settings | None = None) -> dict:
         message = (
             f"Index manifest is corrupt ({total} files on disk)."
             " Rebuild the index from the terminal"
-            " — see the paperqa-mcp-server README, step 5."
+            " — see the paperqa-mcp-server README, step 6."
         )
     else:
         message = f"{indexed}/{total} papers indexed"
@@ -86,7 +86,7 @@ def _index_status(settings: Settings | None = None) -> dict:
             message += (
                 ". Queries will fail or time out."
                 " Please finish building the index from the terminal"
-                " — see the paperqa-mcp-server README, step 5."
+                " — see the paperqa-mcp-server README, step 6."
             )
 
     return {
@@ -138,7 +138,7 @@ async def paper_qa(query: str) -> str:
 
     If this tool returns "Index incomplete", the paper index has not
     been fully built yet. Tell the user to run the index build command
-    from the terminal (see the paperqa-mcp-server README, step 5).
+    from the terminal (see the paperqa-mcp-server README, step 6).
     Do not retry the query — it will give the same result until the
     index is built.
 
