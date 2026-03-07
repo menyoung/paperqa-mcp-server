@@ -6,6 +6,10 @@ entire PDF library. Built on [PaperQA2](https://github.com/Future-House/paper-qa
 Point it at your Zotero storage folder (or any folder of PDFs) and ask
 Claude questions that require deep reading across multiple papers.
 
+<a href="https://glama.ai/mcp/servers/@menyoung/paperqa-mcp-server">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@menyoung/paperqa-mcp-server/badge" alt="paperqa-mcp-server MCP server" />
+</a>
+
 ## Quick start
 
 ### 1. Install uv
